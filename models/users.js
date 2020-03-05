@@ -1,81 +1,83 @@
 let mongoose = require('mongoose');
 let Schema = mongoose.Schema;
+
+let crypto = require('crypto');
 let bcrypt = require('bcryptjs');
 let jwt = require('jsonwebtoken');
-let userProfileModel = require('./../models/userProfile');
+let mongooseUniqueValidator = require('mongoose-unique-validator');
 
 let userSchema = new Schema({
     email: {
         type: String,
-        unique: true
+        unique: true,
+        uniqueCaseInsensitive: true,
+        max: 255,
+        min: 6
     },
     password: {
         type: String,
-        select: false
+        select: false,
+        min: 6,
+        max: 1024
     },
-    username: String,
-    phone: String,
     salt: {
         type: String,
-        select: false
+        select: false,
+        min: 6,
+        max: 1024
+    },
+    username: {
+        type: String,
+        max: 255,
+        min: 4
+    },
+    phone: {
+        type: String,
+        min: 10,
+        max: 255
     },
     userProfile: {
         type: Schema.Types.ObjectId,
         ref: 'userprofile'
+    },
+    resetPasswordToken: {
+        type: String,
+        required: false
+    },
+    resetPasswordExpires: {
+        type: String,
+        required: false
+    },
+    creationDate: {
+        type: Date,
+        default: Date.now
+    },
+    updatedDate: {
+        type: Date,
+        default: Date.now
+    },
+    orders: {
+        type: Schema.Types.ObjectId,
+        ref: 'order'
     }
 });
+
+userSchema.plugin(mongooseUniqueValidator);
 
 userSchema.pre('save', function(next){
-    bcrypt.genSalt(10, (err, salt)=>{
-        bcrypt.hash(this.password, salt, (err, hash)=>{
-            this.password = hash;
-            this.salt = salt;
-            next();
-        })
-    })
-});
-
-userSchema.pre('findOneAndUpdate', function(next){
-    if(typeof this._update.password !== 'undefined' || this._update.password !== null){
+    const user = this;
+    if(!user.isModified('password')){
+        return next();
+    } else{
         bcrypt.genSalt(10, (err, salt)=>{
-            bcrypt.hash(this._update.password, salt, (err, hash)=>{
-                this._update.password = hash;
-                this._update.salt = salt;
-                next();
+            bcrypt.hash(this.password, salt, (err, hash)=>{
+                this.password = hash;
+                this.salt = salt;
+                return next();
             })
         })
-    } else{
-        next();
     }
-});
-userSchema.post('findOneAndUpdate', function(){
-    let userProfile = new userProfileModel({
-        email: this.email,
-        username: this.username,
-        phone: this.phone,
-        user : this._id
-    });
-
-    userProfile.findOneAndUpdate({email : this.email}, userProfile, err=> {
-        if(err){
-            console.log('error on post saving of userprofile data ' + err);
-        }
-    });
-});
-
-userSchema.post('save', function(){
-    let userProfile = new userProfileModel({
-        email: this.email,
-        username: this.username,
-        phone: this.phone,
-        user : this._id
-    });
-
-    userProfile.save(err=> {
-        if(err){
-            console.log('error on post saving of userprofile data ' + err);
-        }
-    });
+    
 });
 
 userSchema.methods.verifyPassword = function(password, callback){
@@ -87,7 +89,13 @@ userSchema.methods.verifyPassword = function(password, callback){
 userSchema.methods.generateJWT = function(){
     return jwt.sign({
         id: this.id
-    }, 'mySecret', {expiresIn: '1h'});
+    }, process.env.TOKEN_SECRET || 'mySecret', {expiresIn: '1h'});
+}
+
+userSchema.methods.generatePasswordReset = function(){
+    this.resetPasswordToken = crypto.randomBytes(20).toString('hex');
+    this.resetPasswordExpires = Date.now() + 3600000;
+    this.updatedDate = Date.now();
 }
 
 module.exports = mongoose.model('user', userSchema);
