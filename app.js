@@ -10,9 +10,15 @@ let cors = require('cors');
 let csrf = require('csurf');
 let csrfProtection = csrf({cookie: true});
 let expressSession = require('express-session');
+let MongoStore = require('connect-mongo')(expressSession);
 let mongoose = require('mongoose');
 
-mongoose.connect('mongodb://localhost:27017/little-craft-house');
+mongoose.connect('mongodb://localhost:27017/little-craft-house', {
+  useNewUrlParser: true, 
+  useUnifiedTopology: true,
+  useCreateIndex: true,
+  useFindAndModify: false
+  });
 
 let db = mongoose.connection;
 
@@ -27,6 +33,7 @@ db.once('open', ()=>{
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 let productsRouter = require('./routes/products');
+let cartRouter = require('./routes/carts');
 
 var app = express();
 
@@ -40,10 +47,18 @@ app.use(cors());
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+let options = {
+  mongooseConnection: mongoose.connection,
+  ttl: 10,
+  secret: 'mongoStoreSecret'
+}
+
 app.use(expressSession({
   resave: false,
   saveUninitialized: false,
-  secret: 'sessionSecret'
+  secret: 'sessionSecret',
+  store: new MongoStore(options)
 }));
 app.use(cookieParser());
 
@@ -52,6 +67,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/api', productsRouter);
+app.use('/carts', cartRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
