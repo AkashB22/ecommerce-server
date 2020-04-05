@@ -1,9 +1,9 @@
-let cartController = {};
+let cartsController = {};
 
-let cartService = require('./../services/cartService');
-let productSerive = require('./../services/productService')
+let cartsService = require('../services/cartsService');
+let productsSerive = require('../services/productsService')
 
-cartController.addToCart = async function(req, res, next){
+cartsController.addToCart = async function(req, res, next){
     let userId = req.body.userId//req.login._id
     let cartId = req.body.cartId;
 
@@ -21,12 +21,12 @@ cartController.addToCart = async function(req, res, next){
         }
 
         try {
-            let product = await productSerive.readById(productId);
+            let product = await productsSerive.readById(productId);
             let productPrice = (product.isDiscounted)? product.price - (product.price * product.discountPercent /100) : product.price 
             
             newCartObj.totalPrice = productPrice * newCartObj.quantity;
 
-            let savedCart = await cartService.create(newCartObj);
+            let savedCart = await cartsService.create(newCartObj);
 
             res.status(200).json({
                 message: 'successfully added to the cart',
@@ -39,7 +39,7 @@ cartController.addToCart = async function(req, res, next){
 
     } else{
         try{
-            let existingCart = await cartService.read(cartId);
+            let existingCart = await cartsService.read(cartId);
             if(existingCart){
                 let productId = req.body.productId;
                 let quantity = req.body.quantity;
@@ -64,12 +64,12 @@ cartController.addToCart = async function(req, res, next){
                     existingCart.userId = userId;
                     existingCart.userSet = true;
                 }
-                let product = await productSerive.readById(productId);
+                let product = await productsSerive.readById(productId);
                 let productPrice = (product.isDiscounted)? product.price - (product.price * product.discountPercent /100) : product.price 
 
                 existingCart.totalPrice = existingCart.totalPrice + (productPrice * quantity);
 
-                let updateCart = await cartService.update(existingCart);
+                let updateCart = await cartsService.update(existingCart);
 
                 res.status(200).json({
                     message: 'successfully updated the cart',
@@ -84,4 +84,9 @@ cartController.addToCart = async function(req, res, next){
     }
 }
 
-module.exports = cartController;
+cartsController.readCart = async function(req, res, next){
+    res.status(200).json({
+        name : req.session.name
+    });
+}
+module.exports = cartsController;

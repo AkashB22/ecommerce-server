@@ -1,21 +1,15 @@
-var express = require('express');
+let usersController = {};
+
+
 let passport = require('passport');
-var router = express.Router();
+let usersService = require('../services/usersService');
+let userProfilesService = require('../services/userProfilesService');
+let lib = require('../lib/authenticate');
+let validate = require('../lib/validation');
+let emailHelper = require('../lib/email');
 
-let UserModel = require('./../models/users');
-let UserProfileModel = require('./../models/userProfile');
-let lib = require('./../lib/authenticate');
-let validate = require('./../lib/validation');
-let emailHelper = require('./../lib/email');
-
-/* GET users listing. */
-router.get('/', function(req, res, next) {
-  res.send('respond with a resource');
-});
-
-/* GET users listing. */
-router.post('/signup', async function(req, res, next) {  
-  //validation
+usersController.signUp = async (req, res, next)=>{
+    //validation
   let {error} = validate.signupValidation(req);
 
   if(error){
@@ -29,27 +23,27 @@ router.post('/signup', async function(req, res, next) {
       username = req.body.username,
       phone = req.body.phone;
 
-    let newUser = new UserModel({
+    let userObj = {
       email,
       password,
       username,
       phone
-    });
+    };
 
     try{
-      const savedUser = await newUser.save();
-      let userProfile = new UserProfileModel({
+      const savedUser = await usersService.create(userObj);
+      let userProfile = {
         email: savedUser.email,
         username: savedUser.username,
         phone: savedUser.phone,
-        user : savedUser._id
-      });
+        userId : savedUser._id
+      };
 
-      let savedUserProfile = await userProfile.save();
+      let savedUserProfile = await userProfilesService.create(userProfile);
       
       savedUser.userProfile = savedUserProfile._id;
 
-      let finalSavedUser = await savedUser.save();
+      let finalSavedUser = await usersService.update(savedUser);
 
       res.status(200).json({
         'info': 'user saved successfully',
@@ -62,11 +56,10 @@ router.post('/signup', async function(req, res, next) {
           'error': err.message
         });
       }
-  }  
-});
+  }
+}
 
-/* GET users listing. */
-router.post('/signin', function(req, res, next) {
+usersController.signIn = async (req, res, next)=>{
   //Validation
 
   let {error} = validate.signinValidation(req.body);
@@ -97,9 +90,9 @@ router.post('/signin', function(req, res, next) {
       }
     })(req, res, next);
   }
-});
+}
 
-router.put('/update', lib.authenticate, async (req, res)=>{
+usersController.updateUser = async (req, res, next)=>{
   let {error} = validate.updateValidation(req.body);
 
   if(error){
@@ -129,13 +122,13 @@ router.put('/update', lib.authenticate, async (req, res)=>{
       user.updatedDate = Date.now();
       
       try{
-        let updatedUser = await user.save();
-        let userUpdatedProfile = await UserProfileModel.findOne({user: updatedUser._id});
-        userUpdatedProfile.email = updatedUser.email;
-        userUpdatedProfile.username = updatedUser.username;
-        userUpdatedProfile.phone = updatedUser.phone;
+        let updatedUser = await usersService.update(user);
+        let userProfile = await userProfilesService.read(updatedUser._id)
+        userProfile.email = updatedUser.email;
+        userProfile.username = updatedUser.username;
+        userProfile.phone = updatedUser.phone;
 
-        await userUpdatedProfile.save();
+        userProfileUpdated = await userProfilesService.update(userProfile);
         res.status(200).json({
           info: 'User updated successfully',
           user: updatedUser
@@ -148,14 +141,13 @@ router.put('/update', lib.authenticate, async (req, res)=>{
       }
     }
   }
-});
+}
 
-//Forget password section
-router.post('/forgetPassword', async function(req, res){
+usersController.forgetPassword = async (req, res, next)=>{
   let email = req.body.email;
 
   try{
-    let user = await UserModel.findOne({email : email});
+    let user = await usersService.readByEmail(email);
     if(!user){
       res.status(401).json({
         'info': 'User not found',
@@ -165,9 +157,9 @@ router.post('/forgetPassword', async function(req, res){
       //generate and set reset password token and expiration
       user.generatePasswordReset();
 
-      let resetUser = await user.save();
+      let resetUser = await usersService.update(user);
 
-      let link = `http://${req.headers.host}/users/resetLink/${resetUser.passwordResetToken}`;
+      let link = `http://${req.headers.host}/users/resetLink/${resetUser.resetPasswordToken}`;
       let mailOption = {
         to: resetUser.email,
         from: process.env.FROM_EMAIL || 'ecommerce@gmail.com',
@@ -190,12 +182,12 @@ router.post('/forgetPassword', async function(req, res){
       'error': e.message
     });
   }
-});
+}
 
-router.get('/resetPasswordLink/:resetPasswordToken', async (req, res) =>{
+usersController.resetPasswordLink = async (req, res, next)=>{
   let resetPasswordToken = req.params.resetPasswordToken;
   try{
-    let user = await UserModel.findOne({resetPasswordToken, resetPasswordExpires: {$gt : Date.now()}}).select('email');
+    let user = await usersService.readByResetPasswordToken(resetPasswordToken, true); 
     if(!user){
       res.status(401).json({
         info: 'Reset link has been not a valid one',
@@ -213,12 +205,12 @@ router.get('/resetPasswordLink/:resetPasswordToken', async (req, res) =>{
       error: e.message
     });
   }
-});
+}
 
-router.post('/resetPassword/:resetPasswordToken', async (req, res)=>{
+usersController.resetPassword = async (req, res, next)=>{
   let resetPasswordToken = req.params.resetPasswordToken;
   try{
-    let user = await UserModel.findOne({resetPasswordToken, resetPasswordExpires: {$gt : Date.now()}});
+    let user = await usersService.readByResetPasswordToken(resetPasswordToken, false);
     if(!user){
       res.status(500).json({
         info: 'Reset link has been not a valid one',
@@ -238,7 +230,7 @@ router.post('/resetPassword/:resetPasswordToken', async (req, res)=>{
         user.resetPasswordToken = undefined;
         user.resetPasswordExpires = undefined;
 
-        resettedUser = await user.save();
+        resettedUser = await usersService.update(user);
 
         const mailOption = {
           from: 'ecommerce@gmail.com',
@@ -266,26 +258,23 @@ router.post('/resetPassword/:resetPasswordToken', async (req, res)=>{
       error: e.message
     });
   }
-})
-/* GET user details. */
-router.get('/profile', lib.authenticate, function(req, res, next) {
-  let userDetails = UserModel.findOne({email: req.login.email})
-    .populate('userProfile')
-    .select("-_id -__v")
-    .exec((err, user)=>{
-      if(err){
-        res.status(500).json({
-          'info': 'Internal server error to find userprofile',
-          'error': err
-        });
-      } else{
-        res.status(200).json({
-          'info': 'Authorised user to get user details',
-          'user': user
-        });
-      }
-    })
-});
+}
 
+usersController.getProfile = async (req, res, next)=>{
+  try{
+    let email = req.login.email
+    let userDetails = await usersService.getFullUserDetails(email);
 
-module.exports = router;
+    res.status(200).json({
+      'info': 'Authorised user to get user details',
+      'user': userDetails
+    });
+  } catch(err){
+    res.status(500).json({
+      'info': 'Internal server error to find userprofile',
+      'error': err
+    });
+  }
+}
+
+module.exports = usersController;

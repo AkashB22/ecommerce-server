@@ -13,7 +13,7 @@ let expressSession = require('express-session');
 let MongoStore = require('connect-mongo')(expressSession);
 let mongoose = require('mongoose');
 
-mongoose.connect('mongodb://localhost:27017/little-craft-house', {
+mongoose.connect('mongodb://localhost:27017/ecommerce', {
   useNewUrlParser: true, 
   useUnifiedTopology: true,
   useCreateIndex: true,
@@ -30,10 +30,11 @@ db.once('open', ()=>{
   console.log('db is connected');
 });
 
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
-let productsRouter = require('./routes/products');
-let cartRouter = require('./routes/carts');
+var indexRouter = require('./routes/indexRouter');
+var usersRouter = require('./routes/usersRouter');
+let productsRouter = require('./routes/productsRouter');
+let cartsRouter = require('./routes/cartsRouter');
+let redisCacheTestApiRouter = require('./routes/redisCacheTestApiRouter');
 
 var app = express();
 
@@ -66,8 +67,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
-app.use('/api', productsRouter);
-app.use('/carts', cartRouter);
+app.use('/products', productsRouter);
+app.use('/carts', cartsRouter);
+app.use('/redis', redisCacheTestApiRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
