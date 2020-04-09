@@ -12,7 +12,10 @@ let CartSchema = new Schema({
     }],
     totalQuantity : Number,
     totalPrice: Number,
-    user: String,
+    user: {
+        type: Schema.Types.ObjectId,
+        ref: 'user'
+    },
     userSet: {
         type: Boolean,
         index: true

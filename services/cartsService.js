@@ -1,9 +1,9 @@
 let cartService = {};
 
-let CartModel = require('../models/carts');
+let CartsModel = require('../models/carts');
 
 cartService.create = async function(cartObj){
-    let newCart = new CartModel({
+    let cart = new CartsModel({
         items: [{
             productId: cartObj.productId, 
             quantity: cartObj.quantity
@@ -11,19 +11,24 @@ cartService.create = async function(cartObj){
         totalQuantity : cartObj.totalQuantity,
         totalPrice: cartObj.totalPrice,
         userSet: cartObj.userSet,
+        user : cartObj.userId ? cartObj.userId : undefined
     });
 
-    if(cartObj.userId){
-        newCart.user = cartObj.userId;
-    }
-
-    let savedCart = await newCart.save();
+    let savedCart = await cart.save();
 
     return savedCart;
 }
 
+cartService.readByPopulate = async function (id){
+    // let cart = await (await CartsModel.findById(id).populate('items.productId')).populate('user').execPopulate();
+    let cart = await CartsModel.findById(id).populate('items.productId').exec();
+    return cart;
+}
+
 cartService.read = async function (id){
-    return await CartModel.findById(id);
+    // let cart = await (await CartsModel.findById(id).populate('items.productId')).populate('user').execPopulate();
+    let cart = await CartsModel.findById(id);
+    return cart;
 }
 
 cartService.update = async function(updatedCart){
@@ -31,7 +36,7 @@ cartService.update = async function(updatedCart){
 }
 
 cartService.delete = async function (id){
-    return await CartModel.deleteById(id);
+    return await CartsModel.findByIdAndDelete(id);
 }
 
 module.exports = cartService;

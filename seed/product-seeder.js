@@ -2,7 +2,7 @@ let mongoose = require('mongoose');
 let ProductModel = require('./../models/products');
 let reviewModel = require('./../models/reviews');
 
-mongoose.connect('mongodb://localhost:27017/little-craft-house');
+mongoose.connect('mongodb://localhost:27017/ecommerce');
 
 let db = mongoose.connection;
 

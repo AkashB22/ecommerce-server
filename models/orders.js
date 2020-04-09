@@ -1,21 +1,20 @@
 let mongoose = require('mongoose');
 let Schema = mongoose.Schema;
 
-let orderSchema = new Schema({
+let ordersSchema = new Schema({
     userId : {
         type: Schema.types.ObjectId,
-        ref: 'users'
+        ref: 'user'
     },
-    products: {
-        [
+    cart:[
+        {
             type: Schema.types.ObjectId,
-            ref: 'products'
-        ]
-    },
-    date: {
-        type: Date,
-        default: Date.now;
-    }
+            ref: 'cart' 
+        }
+    ],
+    status: String
+}, {
+    timestamps: true
 });
 
-module.exports = mongoose.model('order', orderSchema);
+module.exports = mongoose.model('order', ordersSchema);

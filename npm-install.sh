@@ -17,3 +17,4 @@ npm install -g morgan@~1.9.1
 npm install -g nodemailer@^6.4.3
 npm install -g passport@^0.4.1
 npm install -g passport-local@^1.0.0
+npm installl -g formidable@^1.2.1

@@ -17,3 +17,4 @@ npm link morgan@~1.9.1
 npm link nodemailer@^6.4.3
 npm link passport@^0.4.1
 npm link passport-local@^1.0.0
+npm link formidable@^1.2.1

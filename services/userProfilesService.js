@@ -28,8 +28,8 @@ userProfilesService.update = async (userProfile)=>{
 
 }
 
-userProfilesService.deleteById = async (userProfileId)=>{
-    let deletedUserProfile = await UserProfileModel.deleteById(userProfileId);
+userProfilesService.findByIdAndDelete = async (userProfileId)=>{
+    let deletedUserProfile = await UserProfileModel.findByIdAndDelete(userProfileId);
 
     return deletedUserProfile;
 }

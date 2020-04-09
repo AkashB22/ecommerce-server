@@ -1,11 +1,15 @@
 let express = require('express');
 let router = express.Router();
 
-let cartController = require('../controllers/cartsController');
+let cartsController = require('../controllers/cartsController');
 let lib = require('./../lib/authenticate');
 
-router.post('/add', lib.authenticate, cartController.addToCart);
+router.post('/', cartsController.create);
 
-router.get('/read', cartController.readCart);
+router.get('/:id', cartsController.read);
+
+router.put('/:id', cartsController.update);
+
+router.delete('/:id', cartsController.delete);
 
 module.exports = router;

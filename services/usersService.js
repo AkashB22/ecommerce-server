@@ -41,8 +41,8 @@ usersService.update = async (user)=>{
     return await user.save();
 }
 
-usersService.deleteById = async (userId)=>{
-    return await UsersModel.deleteById(userId);
+usersService.findByIdAndDelete = async (userId)=>{
+    return await UsersModel.findByIdAndDelete(userId);
 }
 
 usersService.deleteByEmail = async (email)=>{
