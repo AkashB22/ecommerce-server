@@ -5,13 +5,15 @@ let OrdersModel = require('./../models/orders');
 ordersService.create = async (orderObj)=>{
     let order = new OrdersModel({
         userId: orderObj.userId,
-        cart: orderObj.cartId
+        cart: orderObj.cart,
+        status: 'Placed'
     })
 
-    return await OrdersModel.save(order);
+    return await order.save();
 }
 
 ordersService.read = async (orderId)=>{
+    // return await OrdersModel.findById(orderId).populate('cart.items.productId').exec();
     return await OrdersModel.findById(orderId);
 }
 

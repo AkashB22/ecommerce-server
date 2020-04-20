@@ -1,6 +1,6 @@
 let cartService = {};
 
-let CartsModel = require('../models/carts');
+let [CartsModel, CartsSchema] = require('../models/carts');
 
 cartService.create = async function(cartObj){
     let cart = new CartsModel({

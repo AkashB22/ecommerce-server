@@ -1,17 +1,17 @@
 let mongoose = require('mongoose');
+let [CartsModel, CartsSchema] = require('./carts');
+
 let Schema = mongoose.Schema;
 
 let ordersSchema = new Schema({
     userId : {
-        type: Schema.types.ObjectId,
+        type: Schema.Types.ObjectId,
         ref: 'user'
     },
-    cart:[
-        {
-            type: Schema.types.ObjectId,
-            ref: 'cart' 
-        }
-    ],
+    cart: {
+        type: CartsSchema,
+        required: true
+    },
     status: String
 }, {
     timestamps: true

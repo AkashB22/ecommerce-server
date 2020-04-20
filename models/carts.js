@@ -2,7 +2,7 @@ let mongoose = require('mongoose');
 let Schema = mongoose.Schema;
 
 
-let CartSchema = new Schema({
+let CartsSchema = new Schema({
     items: [{
         productId: {
             type: Schema.Types.ObjectId,
@@ -17,19 +17,18 @@ let CartSchema = new Schema({
         ref: 'user'
     },
     userSet: {
-        type: Boolean,
-        index: true
+        type: Boolean
     }
 }, 
 {
     timestamps: true
 });
-CartSchema.index(
-        {updatedAt: 1}, { 
+CartsSchema.index({updatedAt: 1}, 
+    { 
         expireAfterSeconds : 60, 
         partialFilterExpression: {
             userSet: false
         }
-        });
+    });
 
-module.exports = mongoose.model('cart', CartSchema);
+module.exports = [mongoose.model('cart', CartsSchema), CartsSchema];
