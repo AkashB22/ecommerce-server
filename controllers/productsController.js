@@ -3,6 +3,7 @@ let productsController = {};
 let formidable = require('formidable');
 let fs = require('fs');
 let async = require('async');
+let etag = require('etag');
 let {promisify} = require('util');
 let unlinkFile = promisify(fs.unlink);
 let readFile = promisify(fs.readFile);
@@ -87,10 +88,16 @@ productsController.getAllProducts = async (req, res, next)=>{
     try{
         let products = await productsService.getAllProducts();
 
-        res.status(200).json({  
-            info: "Fetched all products",
-            products: products
-        });
+        res.setHeader('Etag', etag(JSON.stringify(products)));
+        res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+        if(req.headers['if-none-match'] === etag(JSON.stringify(products))){
+            res.status(304);
+        } else{
+            res.status(200).json({
+                message: "Fetched producted successfully",
+                products
+            })
+        }
     } catch(e){
         res.status(500).json({
             info: 'Internal server error',

@@ -9,6 +9,12 @@ require('./config/passport-config')();
 let cors = require('cors');
 let csrf = require('csurf');
 let csrfProtection = csrf({cookie: true});
+const i18n = require("i18n");
+i18n.configure({
+  locales: ['en', 'de'],
+  directory: __dirname + '/locales',
+  updateFiles: false
+});
 let expressSession = require('express-session');
 let MongoStore = require('connect-mongo')(expressSession);
 let mongoose = require('mongoose');
@@ -63,6 +69,7 @@ app.use(expressSession({
   store: new MongoStore(options)
 }));
 app.use(cookieParser());
+app.use(i18n.init);
 
 app.use(express.static(path.join(__dirname, 'public')));
 
