@@ -18,3 +18,8 @@ npm link nodemailer@^6.4.3
 npm link passport@^0.4.1
 npm link passport-local@^1.0.0
 npm link formidable@^1.2.1
+npm link i18n
+npm link async
+npm link etag
+npm link request
+npm link redis

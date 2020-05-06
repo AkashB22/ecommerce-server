@@ -15,7 +15,7 @@ let validation = require('./../lib/validation');
 productsController.createProduct = async (req, res, next)=>{
     try{
         const option = {
-            uploadDir: __dirname + '/../imagePath', 
+            uploadDir: __dirname + '/../../../imagePath', 
             multiples: true,
             keepExtensions: true
         };
@@ -23,7 +23,7 @@ productsController.createProduct = async (req, res, next)=>{
     
         form.on('fileBegin', (filename, file) => {
             let fileWithoutExtension = file.name.split('.');
-            file.path = `${__dirname}/../imagePath/${fileWithoutExtension[0]}_${Date.now()}.${fileWithoutExtension[1]}`
+            file.path = `${__dirname}/../../../imagePath/${fileWithoutExtension[0]}_${Date.now()}.${fileWithoutExtension[1]}`
             form.emit('data', { name: 'fileBegin', filename, value: file });
         });
            
