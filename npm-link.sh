@@ -23,3 +23,4 @@ npm link async
 npm link etag
 npm link request
 npm link redis
+npm link lodash

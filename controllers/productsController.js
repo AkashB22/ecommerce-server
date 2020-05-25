@@ -4,6 +4,7 @@ let formidable = require('formidable');
 let fs = require('fs');
 let async = require('async');
 let etag = require('etag');
+let _ = require('lodash');
 let {promisify} = require('util');
 let unlinkFile = promisify(fs.unlink);
 let readFile = promisify(fs.readFile);
@@ -111,32 +112,34 @@ productsController.getParticularProduct = async (req, res, next)=>{
         let productId = req.params.id;
 
         let product = await productsService.readById(productId);
-
-        async.waterfall([(callback)=>{
-            let count = 0;
-            if(Array.isArray(product.imagePath) && product.imagePath.length > 0){
-                product.imagePath.forEach(async (image, index)=>{
-                    let base64Image = await readFile(__dirname + '/../imagePath/' + image, 'base64');
-                    count++;
-                    product.imagePath[index] = `data:image/jpeg;base64,${base64Image}`;
-                    if(count === product.imagePath.length) callback(null, product);
+        product.imageBase64Path = [];
+        async.eachSeries(product.imagePath, (imagePath, callback)=>{
+            if(imagePath){
+                fs.readFile(__dirname + '/../../../imagePath/' + imagePath, 'base64', (error, base64Image)=>{
+                    if(error) return callback(error, null);
+                    product.imageBase64Path.push(`data:image/jpeg;base64,${base64Image}`);
+                    return callback(null, product);
                 })
+                    
+            } else{
+                return callback(true, null);
             }
-        }], (error, response)=>{
+        }, (error)=>{
             if(error){
-                res.status(500).json({
+                return res.status(500).json({
                     info: 'Internal server error',
                     error: e.message
                 });
             }
-            res.status(200).json({  
+            // console.log(product.imageBase64Path)
+            return res.status(200).json({  
                 info: "Successfully fetched the product",
-                product: response
+                product: product
             });
         })
         
     } catch(e){
-        res.status(500).json({
+        return res.status(500).json({
             info: 'Internal server error',
             error: e.message
         });

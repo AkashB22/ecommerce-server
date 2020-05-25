@@ -23,3 +23,4 @@ npm install -g async
 npm install -g etag
 npm install -g request
 npm install -g redis
+npm install -g lodash

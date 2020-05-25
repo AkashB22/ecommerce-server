@@ -28,7 +28,7 @@ productsService.update = async (product)=>{
 }
 
 productsService.readById = async function(id){
-    return await ProductsModel.findById(id);
+    return await ProductsModel.findById(id).lean();
 }
 
 productsService.getAllProducts = async function(){
