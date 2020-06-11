@@ -24,3 +24,4 @@ npm link etag
 npm link request
 npm link redis
 npm link lodash
+npm link mime

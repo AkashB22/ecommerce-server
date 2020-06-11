@@ -24,3 +24,4 @@ npm install -g etag
 npm install -g request
 npm install -g redis
 npm install -g lodash
+npm install -g mime

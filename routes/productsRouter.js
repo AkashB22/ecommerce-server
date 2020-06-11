@@ -10,8 +10,10 @@ router.get('/:id', productsController.getParticularProduct);
 
 router.put('/:id', productsController.updateParticularProduct);
 
+router.delete('/:id', productsController.deleteParticularProduct);
+
 router.put('/images/:id', productsController.updateImagesForProduct);
 
-router.delete('/:id', productsController.deleteParticularProduct);
+router.post('/image', productsController.sendImage);
 
 module.exports = router;

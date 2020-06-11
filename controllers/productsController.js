@@ -11,6 +11,8 @@ let readFile = promisify(fs.readFile);
 let productsService = require('../services/productsService');
 let reviewsService = require('../services/reviewsService');
 let validation = require('./../lib/validation');
+let mimeType = require('mime');
+let path = require('path');
 
 
 productsController.createProduct = async (req, res, next)=>{
@@ -89,17 +91,64 @@ productsController.getAllProducts = async (req, res, next)=>{
     try{
         let products = await productsService.getAllProducts();
 
-        res.setHeader('Etag', etag(JSON.stringify(products)));
-        res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
-        if(req.headers['if-none-match'] === etag(JSON.stringify(products))){
-            res.status(304);
-        } else{
-            res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate, maxage=0");
-            res.status(200).json({
-                message: "Fetched producted successfully",
-                products
+        let productsObj = [];
+
+        products.forEach(product=>{
+            const newProduct = {
+                name: product.name,
+                imagePath: product.imagePath,
+                description: product.description,
+                discountPercent: product.discountPercent,
+                availableQuantity: product.availableQuantity,
+                price: product.price,
+                category: product.category,
+                seller: product.seller,
+                isTrending: product.isTrending,
+                isDiscounted: product.isDiscounted,
+                offers: product.offers,
+                sizes: product.sizes,
+                colors: product.colors,
+                averageRating: product.averageRating 
+            }
+            productsObj.push(newProduct);
+        })
+
+        // res.setHeader('Etag', etag(JSON.stringify(products)));
+        // res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+        // if(req.headers['if-none-match'] === etag(JSON.stringify(products))){
+        //     res.status(304);
+        // } else{
+            async.eachSeries(productsObj, (product, callback)=>{
+                if(product.imagePath[0] && product.imagePath[1]){
+                    product.imageBase64Path = [];
+                    fs.readFile(__dirname + '/../../../imagePath/' + product.imagePath[0], 'base64', (error, base64Image0)=>{
+                        if(error) return callback(error, null);
+                        product.imageBase64Path.push(`data:image/jpeg;base64,${base64Image0}`);
+                        fs.readFile(__dirname + '/../../../imagePath/' + product.imagePath[1], 'base64', (error, base64Image1)=>{
+                            if(error) return callback(error, null);
+                            product.imageBase64Path.push(`data:image/jpeg;base64,${base64Image1}`);
+                            return callback(null, product);
+                        })
+                    })
+                } else{
+                    return callback(true, null);
+                }
+            }, (error)=>{
+                if(error){
+                    return res.status(500).json({
+                        info: 'Internal server error',
+                        error: error.message
+                    });
+                }
+                // console.log(product.imageBase64Path)
+                
+                res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate, maxage=0");
+                res.status(200).json({
+                    message: "Fetched producted successfully",
+                    products: productsObj
+                })
             })
-        }
+        // }
     } catch(e){
         res.status(500).json({
             info: 'Internal server error',
@@ -348,6 +397,31 @@ productsController.updateImagesForProduct = async (req, res, next)=>{
             error: e.message
         });
     }
+}
+
+productsController.sendImage = async (req, res,next)=>{
+    let imageName = req.body.image;
+    fs.readFile(__dirname + `/../../../imagePath/${imageName}`, 'base64', (error, base64Image)=>{
+        if(error){
+            return res.status(404).json({
+                info: `Image with the ${imageName} name is missing`,
+                error: error.message
+            })
+        } 
+        const fileMimeType = mimeType.getType(imageName);
+        // res.setHeader('Content-Type', fileMimeType);
+        // res.setHeader('Content-Disposition', "attachment; filename=" + imageName);
+        return res.status(200).json({
+            data: `data:${fileMimeType};base64,${base64Image}`,
+            info: `${imageName} sent successfully`
+        });
+    })
+
+    // const fileMimeType = mimeType.getType(imageName);
+    // res.setHeader('Content-Type', fileMimeType);
+    // res.setHeader('Content-Disposition', "attachment; charset=utf-8; filename=" + imageName);
+    // const resolvedPath = path.resolve(__dirname + `/../../../imagePath/${imageName}`);
+    // res.sendFile(resolvedPath);
 }
 
 module.exports = productsController;
