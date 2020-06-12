@@ -25,3 +25,5 @@ npm install -g request
 npm install -g redis
 npm install -g lodash
 npm install -g mime
+npm install -g request-promise
+npm install -g tough-cookie

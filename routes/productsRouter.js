@@ -16,4 +16,6 @@ router.put('/images/:id', productsController.updateImagesForProduct);
 
 router.post('/image', productsController.sendImage);
 
+router.post("/upload", productsController.uploadAfile);
+
 module.exports = router;

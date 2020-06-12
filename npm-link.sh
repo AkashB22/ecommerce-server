@@ -25,3 +25,5 @@ npm link request
 npm link redis
 npm link lodash
 npm link mime
+npm link request-promise
+npm link tough-cookie

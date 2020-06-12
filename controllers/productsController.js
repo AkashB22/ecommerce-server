@@ -13,6 +13,10 @@ let reviewsService = require('../services/reviewsService');
 let validation = require('./../lib/validation');
 let mimeType = require('mime');
 let path = require('path');
+const http = require('http');
+const qs = require('querystring');
+const rp = require('request-promise').defaults({simple : false});
+var tough = require('tough-cookie');
 
 
 productsController.createProduct = async (req, res, next)=>{
@@ -23,7 +27,7 @@ productsController.createProduct = async (req, res, next)=>{
             keepExtensions: true
         };
         const form = formidable(option);
-    
+        
         form.on('fileBegin', (filename, file) => {
             let fileWithoutExtension = file.name.split('.');
             file.path = `${__dirname}/../../../imagePath/${fileWithoutExtension[0]}_${Date.now()}.${fileWithoutExtension[1]}`
@@ -108,7 +112,8 @@ productsController.getAllProducts = async (req, res, next)=>{
                 offers: product.offers,
                 sizes: product.sizes,
                 colors: product.colors,
-                averageRating: product.averageRating 
+                averageRating: product.averageRating ,
+                _id: product._id
             }
             productsObj.push(newProduct);
         })
@@ -122,16 +127,26 @@ productsController.getAllProducts = async (req, res, next)=>{
                 if(product.imagePath[0] && product.imagePath[1]){
                     product.imageBase64Path = [];
                     fs.readFile(__dirname + '/../../../imagePath/' + product.imagePath[0], 'base64', (error, base64Image0)=>{
-                        if(error) return callback(error, null);
-                        product.imageBase64Path.push(`data:image/jpeg;base64,${base64Image0}`);
-                        fs.readFile(__dirname + '/../../../imagePath/' + product.imagePath[1], 'base64', (error, base64Image1)=>{
-                            if(error) return callback(error, null);
-                            product.imageBase64Path.push(`data:image/jpeg;base64,${base64Image1}`);
-                            return callback(null, product);
-                        })
+                        if(error && error.code && error.code === "ENOENT"){
+                            return callback(null);
+                        } else if(error){
+                            return callback(error, null);
+                        } else{
+                            product.imageBase64Path.push(`data:image/jpeg;base64,${base64Image0}`);
+                            fs.readFile(__dirname + '/../../../imagePath/' + product.imagePath[1], 'base64', (error, base64Image1)=>{
+                                if(error && error.code && error.code === "ENOENT"){
+                                    return callback(null);
+                                } else if(error){
+                                    return callback(error, null);
+                                } else{
+                                    product.imageBase64Path.push(`data:image/jpeg;base64,${base64Image1}`);
+                                    return callback(null, product);
+                                }
+                            })
+                        }
                     })
                 } else{
-                    return callback(true, null);
+                    return callback(null);
                 }
             }, (error)=>{
                 if(error){
@@ -166,9 +181,14 @@ productsController.getParticularProduct = async (req, res, next)=>{
         async.eachSeries(product.imagePath, (imagePath, callback)=>{
             if(imagePath){
                 fs.readFile(__dirname + '/../../../imagePath/' + imagePath, 'base64', (error, base64Image)=>{
-                    if(error) return callback(error, null);
-                    imageBase64Path.push(`data:image/jpeg;base64,${base64Image}`);
-                    return callback(null, product);
+                    if(error && error.code && error.code === "ENOENT"){
+                        return callback(null);
+                    } else if(error){
+                        return callback(error, null);
+                    } else{
+                        imageBase64Path.push(`data:image/jpeg;base64,${base64Image}`);
+                        return callback(null, product);
+                    }
                 })
                     
             } else{
@@ -226,7 +246,7 @@ productsController.updateParticularProduct = async (req, res, next)=>{
           
         form.parse(req, async (err, fields, files)=>{
             if(err){
-                res.status(500).json({
+                return res.status(500).json({
                     info: 'Internal server error',
                     error: err
                 });
@@ -257,7 +277,18 @@ productsController.updateParticularProduct = async (req, res, next)=>{
                 }
 
                 for(let i=0; i<previousImage.length; i++){
-                    await unlinkFile(__dirname + '/../../../imagePath/' + previousImage[i]);
+                    try {
+                        await unlinkFile(__dirname + '/../../../imagePath/' + previousImage[i]);
+                    } catch (error) {
+                        if(error && error.code && error.code === "ENOENT"){
+                            console.log("file misiing");
+                        } else {
+                            return res.status(500).json({
+                                'info': 'Error while deleting the files',
+                                'error': error.message
+                            });
+                        }
+                    }
                 }
             }
     
@@ -422,6 +453,71 @@ productsController.sendImage = async (req, res,next)=>{
     // res.setHeader('Content-Disposition', "attachment; charset=utf-8; filename=" + imageName);
     // const resolvedPath = path.resolve(__dirname + `/../../../imagePath/${imageName}`);
     // res.sendFile(resolvedPath);
+}
+
+productsController.uploadAfile = (req, res, next)=>{
+    const option = {
+        uploadDir: __dirname + '/../../../imagePath', 
+        multiples: true,
+        keepExtensions: true
+    };
+    const form = formidable(option);
+    let formData;
+
+    form.on('fileBegin', (filename, file) => {
+        let fileWithoutExtension = file.name.split('.');
+        file.path = `${__dirname}/../../../imagePath/${fileWithoutExtension[0]}_${Date.now()}.${fileWithoutExtension[1]}`
+        form.emit('data', { name: 'fileBegin', filename, value: file });
+    });
+       
+    form.on('file', (filename, file) => {
+        form.emit('data', { name: 'file', key: filename, value: file });
+    });
+       
+    form.on('field', (fieldName, fieldValue) => {
+        form.emit('data', { name: 'field', key: fieldName, value: fieldValue });
+    });
+       
+    form.once('end', () => {
+        console.log('Done!');
+    })
+      
+    form.parse(req, async (err, fields, files)=>{
+        if(err){
+            res.status(500).json({
+                info: 'Internal server error',
+                error: err
+            });
+        }
+        formData = {
+            file: {
+                value: fs.createReadStream(files.file.path),
+                options: {
+                    filename: files.file.name
+                }
+            }
+        };
+        let options = {
+            method : 'POST',
+            uri : "http://localhost:3002/submit-form",
+            headers : {
+                cookie: req.headers.cookie
+            },
+            formData: formData
+        }
+        rp(options)
+            .then((response) => {
+                const output = { data : response };
+
+                /*To handle non json response- converting to string */
+                // if(!response.body){output.data = ""+response.body}
+
+                res.json(output);
+            }).catch((error) => {
+                res.json(error)
+            })
+            
+    })
 }
 
 module.exports = productsController;
