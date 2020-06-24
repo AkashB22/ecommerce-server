@@ -27,3 +27,4 @@ npm install -g lodash
 npm install -g mime
 npm install -g request-promise
 npm install -g tough-cookie
+npm intall -g body-parser

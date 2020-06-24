@@ -27,3 +27,4 @@ npm link lodash
 npm link mime
 npm link request-promise
 npm link tough-cookie
+npm link body-parser

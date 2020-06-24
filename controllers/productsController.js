@@ -489,33 +489,7 @@ productsController.uploadAfile = (req, res, next)=>{
                 error: err
             });
         }
-        formData = {
-            file: {
-                value: fs.createReadStream(files.file.path),
-                options: {
-                    filename: files.file.name
-                }
-            }
-        };
-        let options = {
-            method : 'POST',
-            uri : "http://localhost:3002/submit-form",
-            headers : {
-                cookie: req.headers.cookie
-            },
-            formData: formData
-        }
-        rp(options)
-            .then((response) => {
-                const output = { data : response };
-
-                /*To handle non json response- converting to string */
-                // if(!response.body){output.data = ""+response.body}
-
-                res.json(output);
-            }).catch((error) => {
-                res.json(error)
-            })
+        return res.json({data: "sent"});
             
     })
 }
