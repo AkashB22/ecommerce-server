@@ -496,10 +496,12 @@ productsController.uploadAfile = (req, res, next)=>{
 
 productsController.downloadImage = async (req, res, next)=>{
     let imageName = req.params.image;
-    const fileStream = fs.createReadStream(__dirname + `/../../../imagePath/${imageName}`);
-    const fileMimeType = mimeType.getType(imageName);
-        res.setHeader('Content-Type', fileMimeType);
-        res.setHeader('Content-Disposition', "attachment; filename=" + imageName);
+    const fileStream = fs.createReadStream(__dirname + `/../../../imagePath/${imageName}`),
+        fileMimeType = mimeType.getType(imageName);
+    res.setHeader('Content-Type', fileMimeType);
+    res.setHeader('Content-Disposition', "attachment; filename=" + imageName);
+    res.setHeader('Content-Description', 'File-Transfer');
+    res.setHeader('Content-Transfer-Encoding', 'binary');
     fileStream.pipe(res);
     return;
 
