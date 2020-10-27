@@ -18,4 +18,6 @@ router.post('/image', productsController.sendImage);
 
 router.post("/upload", productsController.uploadAfile);
 
+router.get("/downloadImage/:image", productsController.downloadImage);
+
 module.exports = router;

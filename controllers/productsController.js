@@ -489,9 +489,25 @@ productsController.uploadAfile = (req, res, next)=>{
                 error: err
             });
         }
-        return res.json({data: "sent"});
+        return res.status(200).json({data: "sent"});
             
     })
+}
+
+productsController.downloadImage = async (req, res, next)=>{
+    let imageName = req.params.image;
+    const fileStream = fs.createReadStream(__dirname + `/../../../imagePath/${imageName}`);
+    const fileMimeType = mimeType.getType(imageName);
+        res.setHeader('Content-Type', fileMimeType);
+        res.setHeader('Content-Disposition', "attachment; filename=" + imageName);
+    fileStream.pipe(res);
+    return;
+
+    // const fileMimeType = mimeType.getType(imageName);
+    // res.setHeader('Content-Type', fileMimeType);
+    // res.setHeader('Content-Disposition', "attachment; charset=utf-8; filename=" + imageName);
+    // const resolvedPath = path.resolve(__dirname + `/../../../imagePath/${imageName}`);
+    // res.sendFile(resolvedPath);
 }
 
 module.exports = productsController;
